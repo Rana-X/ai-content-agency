@@ -1,172 +1,196 @@
-# AI Content Agency - Project Context for Claude
+# CLAUDE.md
 
-## Current Status: Phase 2 Complete ✅
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-### Project Overview
-This is a **LangGraph learning project** that demonstrates ALL major LangGraph features through a multi-agent blog writing system. The project is being built in phases following the plan in `LANGGRAPH_COMPLETE_LEARNING_PROJECT.md`.
+## Project Overview
+
+This is a LangGraph learning project that demonstrates all major LangGraph features through a multi-agent blog writing system. The project follows a 15-phase development plan documented in `LANGGRAPH_COMPLETE_LEARNING_PROJECT.md`.
+
+## Current Status: Phase 3 COMPLETE ✅
 
 ### Completed Phases
+- ✅ **Phase 1**: Foundation Setup - Environment, dependencies, API connections
+- ✅ **Phase 2**: State Management - ContentState, StateManager, database schema  
+- ✅ **Phase 3**: Basic Agent Implementation - All 4 agents working
 
-#### ✅ Phase 1: Foundation Setup (COMPLETE)
-- Python 3.9 environment configured (works with 3.9+, not just 3.11)
-- All dependencies installed via `requirements.txt`
-- Gemini API (using gemini-1.5-flash model) connected and working
-- Supabase database connected with credentials in `.env`
-- GitHub repository: https://github.com/Rana-X/ai-content-agency
+### Architecture
 
-#### ✅ Phase 2: State Management System (COMPLETE)
-- **Simplified ContentState TypedDict** created in `state/models.py`
-  - Focused on learning LangGraph features
-  - Removed production complexity (monitoring handled by LangSmith)
-  - Key fields: `parallel_results` for parallel execution, `enable_research/revision` for dynamic graphs
-- **StateManager** implemented in `state/storage.py`
-  - Full CRUD operations
-  - Checkpoint/restore for time travel
-  - Human feedback storage
-- **Database tables created** in Supabase:
-  - `project_states` - Main state storage
-  - `state_history` - Time travel checkpoints
-  - `human_feedback` - Human-in-the-loop
-  - `active_projects` - View
-  - `project_stats` - View
-- All features tested and working
+The system implements a multi-agent workflow for content creation:
+- **Manager Agent**: Validates topics, initializes state, routes workflow (standard→research, quick→writer)
+- **Research Agent**: Performs web searches using Brave Search API (single search for now)
+- **Writer Agent**: Generates 400-800 word blog posts using Gemini 2.0 Flash
+- **Review Agent**: Evaluates quality (0-100 score), provides feedback, NEVER modifies content
 
-### Next Phase: Phase 3 - Basic Agent Implementation
+### Core Flow
+Topic Input → Manager → Research (if standard) → Writer → Review → Complete
 
-According to the learning plan, Phase 3 involves creating four core agents:
+## Commands
 
-1. **Manager Agent** (`agents/manager.py`)
-   - Receives initial request
-   - Parses topic input
-   - Sets initial state
-   - Routes to next agent
+### Development
+```bash
+# Activate virtual environment
+source venv/bin/activate  # macOS/Linux
+venv\Scripts\activate      # Windows
 
-2. **Research Agent** (`agents/research.py`)
-   - Basic single search implementation (not parallel yet)
-   - Uses DuckDuckGo API
-   - Extracts relevant information
-   - Returns research notes
+# Install dependencies
+pip install -r requirements.txt
 
-3. **Writer Agent** (`agents/writer.py`)
-   - Takes research notes as input
-   - Generates blog post draft using Gemini
-   - Formats content properly
-   - Updates state with draft
+# Validate setup (checks API connections)
+python validate_setup.py
 
-4. **Review Agent** (`agents/review.py`)
-   - Evaluates draft quality
-   - Generates quality score (0-100)
-   - Provides feedback comments
-   - Decides if revision needed
-
-### Important Context
-
-#### Environment Variables (`.env`)
+# Run the FastAPI application (when implemented)
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### Testing
+```bash
+# Run all tests
+pytest
+
+# Run tests with async support
+pytest --asyncio-mode=auto
+
+# Test specific components
+python -c "from config import config; print(config.validate())"
+python -c "from state import create_initial_state; print(create_initial_state('Test', 'quick'))"
+```
+
+## Project Structure
+
+```
+ai-content-agency/
+├── agents/              # Agent implementations (manager, research, writer, review)
+├── workflows/           # Workflow definitions and factory
+│   └── subgraphs/      # Reusable workflow components
+├── state/              # State management
+│   ├── models.py       # ContentState TypedDict
+│   └── storage.py      # StateManager for database operations
+├── api/                # FastAPI endpoints
+│   ├── main.py         # Core API
+│   ├── streaming.py    # SSE streaming
+│   └── human_loop.py   # Human feedback handling
+├── database/           
+│   └── schema.sql      # Supabase database schema
+└── config.py           # Configuration and API clients
+```
+
+## Key Components
+
+### State Management (ContentState)
+The core state object contains:
+- **Identification**: project_id, thread_id
+- **Research Data**: notes, sources, parallel_results
+- **Content**: draft, final_content, word_count
+- **Quality**: score, revision_count, review_comments
+- **Workflow Control**: next_action, enable_research, enable_revision
+- **Human Interaction**: feedback, approval status
+- **Time Travel**: checkpoint_history
+
+### Database Schema (Supabase)
+- `project_states`: Main state storage with JSONB
+- `state_history`: Checkpoints for time travel
+- `human_feedback`: Human-in-the-loop interactions
+- Views: `active_projects`, `project_stats`
+
+### Configuration
+- **Gemini API**: Uses gemini-1.5-flash model (60 requests/min free)
+- **Supabase**: PostgreSQL database with real-time capabilities
+- **LangSmith**: Optional tracing (5000 traces/month free)
+- **DuckDuckGo**: Unlimited search API (no key required)
+
+## Development Phases Status
+
+✅ **Phase 1**: Foundation Setup - Environment, dependencies, API connections
+✅ **Phase 2**: State Management - ContentState, StateManager, database schema
+✅ **Phase 3**: Basic Agent Implementation - Manager, Research, Writer, Review agents
+🔄 **Phase 4**: Basic Linear Workflow (Next)
+⏳ **Phase 5**: Research Subgraph
+⏳ **Phase 6**: Parallel Execution
+⏳ **Phase 7**: Complex Routing and Conditionals
+⏳ **Phase 8**: Multiple Workflow Variants
+⏳ **Phase 9**: Checkpointing and Time Travel
+⏳ **Phase 10**: Human-in-the-Loop
+⏳ **Phase 11**: Streaming and Real-time Updates
+⏳ **Phase 12**: Dynamic Graph Building
+⏳ **Phase 13**: Production Enhancements
+⏳ **Phase 14**: Testing and Validation
+⏳ **Phase 15**: Deployment and Documentation
+
+## Important Notes
+
+### Design Principles
+- **Learning Focus**: Prioritize demonstrating LangGraph features over production complexity
+- **Simplicity**: Avoid over-engineering; LangSmith handles monitoring
+- **Type Safety**: Use TypedDict for state consistency
+- **Async by Default**: StateManager uses async/await patterns
+
+### Workflow Modes
+- **Standard Mode**: Full workflow with research, revisions, and human review
+- **Quick Mode**: Simplified workflow without research or revisions
+
+### Key Settings
+- `MAX_RETRIES`: 2 (for research attempts)
+- `QUALITY_THRESHOLD`: 60 (minimum quality score)
+- `MAX_CHECKPOINT_HISTORY`: 10 (time travel limit)
+- `DEFAULT_WORD_COUNT_TARGET`: 1000 words
+
+### API Rate Limits
+- Gemini Pro: 60 requests per minute (free tier)
+- DuckDuckGo: Unlimited (no API key required)
+- Supabase: Based on your plan (free tier available)
+
+## Phase 3 Implementation Details (COMPLETE)
+
+### Agent Implementations
+
+#### 1. Manager Agent (`agents/manager.py`)
+- **Purpose**: Initialize projects and route workflows
+- **Key Functions**:
+  - Validates topic (2-50 words, contains actual words)
+  - Cleans topic (removes special chars, title case)
+  - Extracts keywords (max 5, removes stop words)
+  - Routes: standard mode → research, quick mode → writer
+- **No External APIs**: Pure Python processing
+
+#### 2. Research Agent (`agents/research.py`)
+- **Purpose**: Gather information from web
+- **Uses**: Brave Search API (key: BSArHGdATae0Nala46gDn4e_ck_5ngk)
+- **Process**: Single search, max 5 results
+- **Extracts**: Descriptions → research_notes, URLs → sources
+- **Note**: Replaced DuckDuckGo due to rate limits
+
+#### 3. Writer Agent (`agents/writer.py`)
+- **Purpose**: Generate blog posts
+- **Uses**: Gemini 2.0 Flash API
+- **System Prompt**: 200+ lines of detailed instructions
+- **Output**: 400-800 word blog posts
+- **Works**: With or without research notes
+
+#### 4. Review Agent (`agents/review.py`)
+- **Purpose**: Evaluate quality, NOT revise
+- **Scoring**: 0-100 points (4 categories × 25)
+- **Feedback**: Exactly 3 actionable points
+- **CRITICAL**: Copies draft to final_content unchanged
+- **Always**: Routes to complete (no conditional logic)
+
+### Next Phase 4: Basic Linear Workflow
+Will create `workflows/basic.py` with:
+- Linear flow: Manager → Research → Writer → Review → End
+- No conditionals or loops yet
+- Basic state passing between agents
+- FastAPI endpoints for testing
+
+### API Keys and Configuration
+```env
 GEMINI_API_KEY=AIzaSyCAuGPeHyGwJdTxgsMP6ynDK1dMzaRMQfs
+BRAVE_API_KEY=BSArHGdATae0Nala46gDn4e_ck_5ngk
 SUPABASE_URL=https://hyfsgrqyzxlyypyjwipw.supabase.co
 SUPABASE_KEY=eyJhbGci...kErY (full key in .env)
 ```
 
-#### Key Design Decisions
-1. **Simplified Schema** - Focus on learning LangGraph, not production features
-2. **LangSmith for Monitoring** - No custom monitoring in state
-3. **Dynamic Graph Support** - `enable_research` and `enable_revision` flags
-4. **Parallel Execution Ready** - `parallel_results` field for storing parallel search results
-5. **Time Travel Ready** - Checkpoint system implemented and tested
-
-#### Project Structure
-```
-ai-content-agency/
-├── agents/           # Phase 3: Ready for agent implementation
-├── api/             # Phase 4: Will contain FastAPI endpoints
-├── database/        
-│   └── schema.sql   # Database schema reference
-├── state/           # ✅ COMPLETE
-│   ├── __init__.py
-│   ├── models.py    # ContentState TypedDict
-│   └── storage.py   # StateManager class
-├── workflows/       # Phase 4: Will contain workflow definitions
-│   └── subgraphs/   # Phase 5: Will contain research subgraph
-├── config.py        # Configuration with API clients
-├── requirements.txt # All dependencies
-└── README.md       # User documentation
-```
-
-### Testing the Current Setup
-
-To verify everything is working:
-
-```python
-# Test state management
-from config import config
-from state import StateManager, create_initial_state
-
-# Get Supabase client
-client = config.get_supabase_client()
-state_manager = StateManager(client)
-
-# Create a test project
-state = await state_manager.create_project("Test Topic", "standard")
-print(f"Created project: {state['project_id']}")
-
-# Test Gemini
-gemini = config.get_gemini_client()
-response = gemini.invoke("Say hello")
-print(f"Gemini response: {response.content}")
-```
-
-### Development Guidelines
-
-1. **Keep it Simple** - This is for learning LangGraph, not production
-2. **Follow the Phases** - Don't skip ahead in the learning plan
-3. **Test Incrementally** - Test each component as you build it
-4. **Use Type Hints** - ContentState TypedDict ensures consistency
-5. **Async by Default** - StateManager uses async/await pattern
-
-### LangGraph Features to Demonstrate
-
-The project will demonstrate these features across phases:
-- ✅ **State Management** - ContentState (Phase 2)
-- 🔄 **Basic Agents** - 4 core agents (Phase 3)
-- 🔄 **Linear Workflow** - Simple flow (Phase 4)
-- 🔄 **Subgraphs** - Research subgraph (Phase 5)
-- 🔄 **Parallel Execution** - 3 parallel searches (Phase 6)
-- 🔄 **Complex Routing** - Retry logic (Phase 7)
-- 🔄 **Multiple Workflows** - Standard vs Quick (Phase 8)
-- 🔄 **Time Travel** - Checkpoints (Phase 9)
-- 🔄 **Human-in-the-Loop** - Review interruption (Phase 10)
-- 🔄 **Streaming** - Real-time updates (Phase 11)
-- 🔄 **Dynamic Graphs** - Runtime construction (Phase 12)
-
-### Current Task
-**Implement Phase 3: Basic Agent Implementation**
-- Create the four core agents
-- Each agent should be simple and focused
-- Agents modify the ContentState
-- No complex logic yet (that comes in later phases)
-
-### Questions for Next Session
-When continuing this project, consider:
-1. Should agents be async or sync?
-2. How should agents handle errors?
-3. What's the minimal viable implementation for each agent?
-4. How to structure agent responses to update state properly?
-
-### Useful Commands
-```bash
-# Activate environment
-source venv/bin/activate
-
-# Test connections
-python -c "from config import config; print(config.validate())"
-
-# Git status
-git status
-
-# Run any test
-python -c "from state import create_initial_state; print(create_initial_state('Test', 'quick'))"
-```
-
----
-*Last Updated: Phase 2 Complete - Ready for Phase 3: Agent Implementation*
+### Testing
+All agents have test files (`test_*.py`) that verify:
+- Core functionality
+- State updates
+- Error handling
+- Integration readiness
