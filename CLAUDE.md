@@ -89,19 +89,37 @@ ai-content-agency/
 ### Environment Variables (.env)
 ```bash
 # Gemini API (Google AI Studio)
-GEMINI_API_KEY=AIzaSyCAuGPeHyGwJdTxgsMP6ynDK1dMzaRMQfs
+GEMINI_API_KEY=your_actual_gemini_key  # Get from Google AI Studio
 
 # Brave Search API (2000 requests/month free)
-BRAVE_API_KEY=BSArHGdATae0Nala46gDn4e_ck_5ngk
+BRAVE_API_KEY=your_brave_api_key  # Get from Brave Search API
 
 # Supabase (Database)
-SUPABASE_URL=https://hyfsgrqyzxlyypyjwipw.supabase.co
-SUPABASE_KEY=eyJhbGci...kErY  # Full key in .env
+SUPABASE_URL=your_supabase_url  # From Supabase project settings
+SUPABASE_KEY=your_supabase_anon_key  # From Supabase API settings
 
 # LangSmith (Optional - Monitoring)
-LANGCHAIN_API_KEY=your_key_here
+LANGCHAIN_API_KEY=your_langsmith_key  # Optional for tracing
 LANGCHAIN_TRACING_V2=false  # Set true to enable
+LANGCHAIN_PROJECT=ai-content-agency  # Project name in LangSmith
 ```
+
+## 🔧 Configuration Module Details
+
+### Config.py Structure
+- **API Clients**: Methods to get Gemini and Supabase clients
+- **Validation**: `config.validate()` checks all required API keys
+- **LangSmith Setup**: Automatic tracing configuration if enabled
+- **Rate Limiting**: GEMINI_REQUESTS_PER_MINUTE (default: 60)
+- **Workflow Settings**: MAX_RETRIES (2), QUALITY_THRESHOLD (60)
+- **Directory Paths**: Automatic path resolution for all project directories
+
+### Workflow Status Constants
+- CREATED, STARTED, RESEARCHING, WRITING, REVIEWING
+- PENDING_HUMAN_REVIEW, REVISING, COMPLETED, FAILED
+
+### Agent Names Constants
+- MANAGER, RESEARCH, WRITER, REVIEW
 
 ## 💻 Commands
 
@@ -122,14 +140,17 @@ python -c "from config import config; print(config.validate())"
 
 ### Testing Agents
 ```bash
-# Test individual agents
+# Test individual agents (all test files available)
 python agents/test_manager.py
 python agents/test_research.py
 python agents/test_writer.py
 python agents/test_review.py
 
 # Test state management
-python -c "from state import create_initial_state; print(create_initial_state('Test Topic', 'standard'))"
+python -c "from state.models import create_initial_state; print(create_initial_state('Test Topic', 'standard'))"
+
+# Validate complete setup
+python validate_setup.py  # If available
 ```
 
 ### Git Operations
@@ -211,7 +232,9 @@ The state includes all fields needed for phases 3-12:
 - **SSL Warning**: Ignore "NotOpenSSLWarning" - it's harmless
 - **Rate Limits**: Brave allows 2000 requests/month (free tier)
 - **Gemini Errors**: Check API key and internet connection
-- **Import Errors**: Ensure venv is activated
+- **Import Errors**: Ensure venv is activated with `source venv/bin/activate`
+- **Supabase Connection**: Verify URL and anon key are correct
+- **Missing Dependencies**: Run `pip install -r requirements.txt`
 
 ## 📝 Quick Reference
 
@@ -246,17 +269,42 @@ print(f"Generated {result['word_count']} words")
 
 ## 🎯 Next Steps for Phase 4
 
-1. Create `workflows/basic.py` with StateGraph
-2. Implement linear flow: Manager → Research → Writer → Review
-3. Add `api/main.py` with FastAPI endpoints:
-   - POST /create - Start new project
-   - GET /status/{project_id} - Check status
-   - GET /content/{project_id} - Get final content
-4. Test end-to-end workflow
-5. Verify state persistence
+1. **Create Basic Workflow** (`workflows/basic.py`)
+   - Import StateGraph from langgraph
+   - Add nodes for each agent (manager, research, writer, review)
+   - Create linear edges between nodes
+   - Compile graph with checkpointer
+
+2. **Implement FastAPI Application** (`api/main.py`)
+   - POST /create - Initialize new project with topic
+   - GET /status/{project_id} - Check workflow status
+   - GET /content/{project_id} - Retrieve generated content
+   - GET /state/{project_id} - Get full state details
+
+3. **Test End-to-End Flow**
+   - Start API server with `uvicorn api.main:app --reload`
+   - Test workflow with sample topics
+   - Verify state persistence in Supabase
+   - Check all agents execute in sequence
+
+---
+
+## 📚 Additional Resources
+
+### Dependencies (requirements.txt)
+- **Core**: langgraph>=0.2.0, langchain>=0.3.0, langchain-google-genai>=2.0.0
+- **API**: fastapi>=0.115.0, uvicorn>=0.32.0
+- **Database**: supabase>=2.9.0
+- **Search**: duckduckgo-search>=6.3.0 (backup option)
+- **Development**: pytest>=8.3.0, black>=24.10.0
+
+### Database Schema
+- Located in `database/schema.sql`
+- Tables: project_states, state_history, human_feedback
+- Views: active_projects, project_stats
 
 ---
 
 **Last Updated**: Phase 3 Complete - All agents implemented and tested
 **GitHub**: https://github.com/Rana-X/ai-content-agency
-**Next Session**: Start with Phase 4 - Basic Linear Workflow
+**Next Session**: Start with Phase 4 - Basic Linear Workflow implementation
