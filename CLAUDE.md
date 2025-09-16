@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Create reusable patterns for production applications
 - Document the learning journey comprehensively
 
-## 📍 Current Status: Phase 3 COMPLETE ✅
+## 📍 Current Status: Phase 4 COMPLETE ✅
 
 ### ✅ Completed Phases
 
@@ -34,12 +34,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Writer Agent**: Gemini 2.0 Flash for 400-800 word blog posts
 - **Review Agent**: 0-100 scoring, 3 feedback points, NO content modification
 
-### 🔄 Next Phase: Phase 4 - Basic Linear Workflow
-Create `workflows/basic.py` with:
-- Linear flow: Manager → Research → Writer → Review → End
-- No conditionals or loops yet
-- Basic state passing between agents
-- FastAPI endpoints for testing
+#### Phase 4: Basic Linear Workflow & API ✅ COMPLETE
+**Implemented Files:**
+- `workflows/basic.py` - Linear workflow with LangGraph StateGraph
+- `api/main.py` - FastAPI application with all endpoints
+
+**Key Achievements:**
+1. **Linear Workflow Implementation**
+   - Connected all 4 agents: Manager → Research → Writer → Review → End
+   - Used LangGraph StateGraph with ContentState
+   - Added MemorySaver checkpointer for state persistence
+   - Created manager_wrapper to handle Manager's special input requirements
+
+2. **FastAPI Application**
+   - POST /create - Starts workflow in background, returns project_id immediately
+   - GET /status/{project_id} - Shows real-time workflow progress
+   - GET /content/{project_id} - Returns generated blog content
+   - GET /state/{project_id} - Debug endpoint for full state inspection
+   - GET /health - Health check with database connectivity status
+   - Background task execution using BackgroundTasks
+
+3. **Database Issue Resolution** 🔧
+   - **Problem**: Supabase connection failed with `TypeError: __init__() got an unexpected keyword argument 'proxy'`
+   - **Cause**: Version incompatibility between supabase 2.9.0 and supabase_auth/gotrue
+   - **Solution**: Upgraded to supabase==2.18.1, supabase_auth==2.12.3, httpx==0.28.1
+   - **Result**: Full database persistence working, all CRUD operations functional
+   - Created `test_db_fix.py` to verify database connectivity
+
+**Testing Results:**
+- Workflow executes end-to-end successfully
+- Generated 492-word blog post on "Database Test Blog Post About Python"
+- Quality score: 65/100 with 3 review comments
+- Research found 5 sources and notes
+- Full state persisted to Supabase
+
+### 🔄 Next Phase: Phase 5 - Research Subgraph Implementation
+Create modular research component in `workflows/subgraphs/research.py`
 
 ## 🏗️ Architecture
 
@@ -267,25 +297,83 @@ result = agent.process(state)
 print(f"Generated {result['word_count']} words")
 ```
 
-## 🎯 Next Steps for Phase 4
+## 🛠️ Phase 4 Implementation Details (For Next Claude Instance)
 
-1. **Create Basic Workflow** (`workflows/basic.py`)
-   - Import StateGraph from langgraph
-   - Add nodes for each agent (manager, research, writer, review)
-   - Create linear edges between nodes
-   - Compile graph with checkpointer
+### Critical Implementation Notes:
 
-2. **Implement FastAPI Application** (`api/main.py`)
-   - POST /create - Initialize new project with topic
-   - GET /status/{project_id} - Check workflow status
-   - GET /content/{project_id} - Retrieve generated content
-   - GET /state/{project_id} - Get full state details
+#### 1. Manager Agent Wrapper Required
+```python
+def manager_wrapper(state: ContentState) -> ContentState:
+    """Manager expects (topic, mode) not ContentState"""
+    manager = ManagerAgent()
+    topic = state.get("topic", "")
+    mode = state.get("mode", "standard")
+    return manager.process(topic, mode)
+```
 
-3. **Test End-to-End Flow**
-   - Start API server with `uvicorn api.main:app --reload`
-   - Test workflow with sample topics
-   - Verify state persistence in Supabase
-   - Check all agents execute in sequence
+#### 2. StateManager Initialization
+```python
+# MUST initialize with Supabase client
+state_manager = StateManager(config.get_supabase_client())
+# NOT just StateManager() - will fail!
+```
+
+#### 3. API Startup Database Handling
+```python
+@app.on_event("startup")
+async def startup_event():
+    global state_manager
+    try:
+        state_manager = StateManager(config.get_supabase_client())
+        print("✅ Database connection established")
+    except Exception as db_error:
+        # Fallback to mock for demo if DB fails
+        state_manager = MockStateManager()
+```
+
+#### 4. Working Package Versions (CRITICAL)
+```
+supabase==2.18.1
+supabase_auth==2.12.3
+httpx==0.28.1
+postgrest==1.1.1
+storage3==0.12.1
+```
+
+#### 5. Test Commands
+```bash
+# Test workflow directly
+python workflows/basic.py
+
+# Start API server
+uvicorn api.main:app --reload --port 8001
+
+# Test API endpoints
+curl -X POST http://localhost:8001/create \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "Your Topic Here", "mode": "quick"}'
+```
+
+## 🎯 Next Steps for Phase 5 - Research Subgraph Implementation
+
+1. **Create Research Subgraph** (`workflows/subgraphs/research.py`)
+   - Move research logic to modular component
+   - Create three-node subgraph:
+     - Search node - performs searches
+     - Extract node - extracts facts
+     - Summarize node - creates summary
+   - Make it reusable across workflows
+
+2. **Integrate Subgraph into Main Workflow**
+   - Replace single research agent with subgraph
+   - Test subgraph isolation
+   - Verify data flow through subgraph
+   - Ensure state updates properly
+
+3. **Test Modular Architecture**
+   - Verify subgraph can run independently
+   - Test integration with main workflow
+   - Ensure no state leakage between components
 
 ---
 
@@ -305,6 +393,6 @@ print(f"Generated {result['word_count']} words")
 
 ---
 
-**Last Updated**: Phase 3 Complete - All agents implemented and tested
+**Last Updated**: Phase 4 Complete - Linear workflow and API fully functional with database
 **GitHub**: https://github.com/Rana-X/ai-content-agency
-**Next Session**: Start with Phase 4 - Basic Linear Workflow implementation
+**Next Session**: Start with Phase 5 - Research Subgraph Implementation
