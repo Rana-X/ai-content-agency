@@ -5,6 +5,7 @@ Provides HTTP endpoints for the blog generation workflow
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import asyncio
@@ -27,6 +28,15 @@ app = FastAPI(
     title="AI Content Agency API",
     version="1.0.0",
     description="API for AI-powered blog content generation using LangGraph"
+)
+
+# Add CORS middleware to allow frontend connection
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class CreateProjectRequest(BaseModel):
