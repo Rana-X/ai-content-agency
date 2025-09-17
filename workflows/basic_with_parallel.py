@@ -107,11 +107,18 @@ def run_workflow(topic: str, mode: str = "standard") -> Dict[str, Any]:
     # Prepare initial state
     initial_state = prepare_initial_state(topic, mode)
     
-    # Create config with thread_id for checkpointing
+    # Create config with thread_id for checkpointing and LangSmith metadata
     config = {
         "configurable": {
             "thread_id": initial_state["thread_id"]
-        }
+        },
+        "metadata": {
+            "workflow_type": "parallel_research",
+            "mode": mode,
+            "topic": topic[:50],  # First 50 chars for readability
+            "project_id": initial_state.get("project_id")
+        },
+        "tags": [f"mode:{mode}", "parallel", "workflow:basic_with_parallel"]
     }
     
     # Invoke workflow and get final state

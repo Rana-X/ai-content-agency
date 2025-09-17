@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Create reusable patterns for production applications
 - Document the learning journey comprehensively
 
-## 📍 Current Status: Phase 6 COMPLETE ✅
+## 📍 Current Status: Phase 6 COMPLETE + LangSmith Integration ✅
 
 ### ✅ Completed Phases
 
@@ -125,6 +125,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Full workflow: ✅ Generated 480-word blog post, quality score 68/100
 - Data diversity: ✅ More comprehensive research coverage
 - API compatibility: ✅ Successfully handles rate limiting
+
+#### LangSmith Integration ✅ COMPLETE
+**Successfully Integrated Full Observability:**
+- Configured LangSmith for tracing all agent workflows
+- Resolved authentication issues (Personal Access Token vs Service Key)
+- Full visibility into multi-agent execution, timing, and token usage
+
+**Key Issues & Resolutions:**
+1. **403 Forbidden Errors**
+   - **Issue**: Personal Access Token lacked permissions for project creation
+   - **Solution**: Upgraded to Service Key (lsv2_sk_*) with admin privileges
+   
+2. **Workspace ID Requirement**
+   - **Issue**: Org-scoped Service Key required workspace specification
+   - **Solution**: Added LANGSMITH_WORKSPACE_ID to environment variables
+   
+3. **Environment Variable Confusion**
+   - **Issue**: LANGCHAIN_API_KEY vs LANGSMITH_API_KEY naming
+   - **Solution**: Set both for maximum compatibility
+
+**Final Working Configuration:**
+```env
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=<service_key>
+LANGSMITH_API_KEY=<service_key>
+LANGSMITH_WORKSPACE_ID=<workspace_uuid>
+LANGCHAIN_PROJECT=ai-content-agency
+```
+
+**What's Now Available in LangSmith Dashboard:**
+- Complete workflow execution graphs
+- Per-agent timing and performance metrics
+- Token usage tracking for cost optimization
+- Error tracing and debugging capabilities
+- Metadata tags for workflow filtering
 
 ### 🔄 Next Phase: Phase 7 - Complex Routing and Conditionals
 Add retry logic and conditional routing based on quality scores
