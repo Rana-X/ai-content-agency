@@ -31,6 +31,9 @@ class Config:
     # Gemini API Configuration
     GEMINI_API_KEY: str = os.getenv('GEMINI_API_KEY', '')
     
+    # Brave Search API Configuration
+    BRAVE_API_KEY: str = os.getenv('BRAVE_API_KEY', '')
+    
     # Supabase Configuration
     SUPABASE_URL: str = os.getenv('SUPABASE_URL', '')
     SUPABASE_KEY: str = os.getenv('SUPABASE_KEY', '')

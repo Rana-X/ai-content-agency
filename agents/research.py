@@ -8,14 +8,18 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from state.models import ContentState
+from config import Config
 
 
 class ResearchAgent:
     """Research agent that performs web searches"""
     
     def __init__(self):
-        """Initialize Research Agent with Brave API key"""
-        self.api_key = "BSArHGdATae0Nala46gDn4e_ck_5ngk"
+        """Initialize Research Agent with Brave API key from environment"""
+        config = Config()
+        self.api_key = config.BRAVE_API_KEY
+        if not self.api_key:
+            raise ValueError("BRAVE_API_KEY not found in environment variables")
         self.base_url = "https://api.search.brave.com/res/v1/web/search"
     
     def process(self, state: ContentState) -> ContentState:

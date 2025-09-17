@@ -9,11 +9,15 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from state.models import ContentState
+from config import Config
 import requests
 import json
 
-# Brave API Configuration (copied from ResearchAgent)
-BRAVE_API_KEY = "BSArHGdATae0Nala46gDn4e_ck_5ngk"
+# Brave API Configuration from environment
+config = Config()
+BRAVE_API_KEY = config.BRAVE_API_KEY
+if not BRAVE_API_KEY:
+    raise ValueError("BRAVE_API_KEY not found in environment variables")
 BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
 
 
