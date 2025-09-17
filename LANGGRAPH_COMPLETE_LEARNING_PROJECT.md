@@ -182,36 +182,67 @@ Finally, all state changes automatically persist to the database through the Sta
 
 ---
 
-## Phase 5: Research Subgraph Implementation
+## Phase 5: Research Subgraph Implementation ✅ COMPLETE
 
-### Create Research Subgraph
-• Move research logic to `workflows/subgraphs/research.py`
-• Create three-node subgraph:
-  1. Search node - performs searches
-  2. Extract node - extracts facts
-  3. Summarize node - creates summary
+### What Was Built
+Created a modular research subgraph that breaks down the monolithic ResearchAgent into three specialized nodes, demonstrating LangGraph's subgraph capabilities.
 
-### Integrate Subgraph into Main Workflow
-• Replace single research agent with subgraph
-• Test subgraph isolation
-• Verify data flow through subgraph
+### Implementation Details
+• **File Created**: `workflows/subgraphs/research.py`
+• **Three-Node Architecture**:
+  1. **Search Node** - Performs Brave API web search for the topic
+  2. **Extract Node** - Parses search results and extracts descriptions/URLs
+  3. **Summarize Node** - Formats final research notes and cleans temporary data
+
+### Key Technical Challenges & Solutions
+• **Challenge**: LangGraph only allows updates to fields defined in the ContentState TypedDict
+• **Solution**: Used the existing `parallel_results` field for inter-node communication
+• **Learning**: Nodes must return dict of updates (`return {"field": value}`), not the entire state
+
+### Integration with Main Workflow
+• Created `workflows/basic_with_subgraph.py` replacing ResearchAgent with subgraph
+• Subgraph seamlessly integrates - other agents don't know it's a subgraph
+• Maintains identical output format to original ResearchAgent
+
+### Test Results
+• **Isolated Test**: Subgraph produces 5 research notes, 5 sources
+• **Integrated Workflow**: Generated 428-word blog post, quality score 68/100
+• **Comparison Test**: Both original and subgraph workflows produce identical outputs
+• **State Cleanup**: Successfully removes temporary fields from final state
 
 ---
 
-## Phase 6: Parallel Execution
+## Phase 6: Parallel Execution ✅ COMPLETE
 
-### Enhance Research with Parallel Searches
-• Modify research subgraph for parallel execution
-• Implement 3 simultaneous searches:
-  - Topic overview search
-  - Latest news search
-  - Key facts search
-• Use `asyncio.gather()` for parallelization
+### What Was Built
+Enhanced the research subgraph to perform three concurrent searches for different aspects of the topic, demonstrating LangGraph's ability to handle parallel async operations.
 
-### Update State for Parallel Data
-• Add `sources` field to state
-• Add `research_notes` list field
-• Merge parallel results properly
+### Implementation Details
+• **File Created**: `workflows/subgraphs/research_parallel.py`
+• **Three Parallel Searches**:
+  1. **Overview Search** - `"{topic} overview explanation"` for general information
+  2. **News Search** - `"{topic} latest news 2024 2025"` for recent developments  
+  3. **Statistics Search** - `"{topic} statistics data facts"` for numbers and data
+
+### Technical Implementation
+• **Async Architecture**: Uses `asyncio` and `aiohttp` for concurrent HTTP requests
+• **Rate Limiting Solution**: Staggered parallel execution (0s, 1s, 2s delays) to avoid API 429 errors
+• **Data Aggregation**: Combines results from all three searches, deduplicates, and balances output
+
+### Key Challenges & Solutions
+• **Challenge**: Brave API returns 429 (Too Many Requests) for truly simultaneous calls
+• **Solution**: Implemented staggered parallel execution - requests start at different times but run concurrently
+• **Result**: Successfully gets diverse results without overwhelming the API
+
+### Integration & Testing
+• Created `workflows/basic_with_parallel.py` for full workflow integration
+• Created `test_parallel_research.py` for performance comparison
+
+### Test Results
+• **Research Coverage**: 7-10 notes (vs 5 sequential), 10 sources (vs 5 sequential)
+• **Diversity**: Results from three different search angles provide comprehensive coverage
+• **Full Workflow**: Generated 480-word blog post with quality score 68/100
+• **API Compatibility**: Successfully handles rate limiting while maintaining parallel execution
 
 ---
 
